@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de Votación Institucional - Plataforma segura de votación electrónica">
+  <meta name="theme-color" content="#1565C0">
+  <title>Sistema de Votación Institucional</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Ícono -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗳️</text></svg>">
+  <!-- AppState global — se define AQUI para que exista antes que cualquier script externo -->
+  <script>
+    var AppState = {
+      user:null, config:{institutionName:'Sistema de Votacion',logoUrl:''},
+      elections:[], currentElection:null, positions:[], candidates:[],
+      sections:[], urnas:[], locations:[], users:[], voters:[],
+      adminSection:'dashboard', currentVoteData:null, resultsTimer:null,
+      currentUrna:null, votersElectionId:'', pendingPositions:[],
+      currentPositionIndex:0, currentResultsElectionId:'', currentElectionKey:''
+    };
+  </script>
+</head>
+<body>
+
+<!-- ============================================================
+     PÁGINA 1: LOGIN
+     ============================================================ -->
+<div id="page-login" class="page active">
+  <div class="login-card" id="main-login-card">
+    
+    <!-- Logo e Institución -->
+    <div class="login-logo-section">
+      <div class="login-logo-wrap">
+        <img id="login-logo-img" src="" alt="Logo" style="display:none">
+        <span id="login-logo-placeholder" style="font-size:2.5rem">🏫</span>
+      </div>
+      <div id="login-institution-name" class="login-institution-name">Institución Educativa</div>
+      <div id="login-election-name" class="login-election-name"></div>
+    </div>
+
+    <div class="login-divider"></div>
+    <div class="login-title">🔐 Inicio de Sesión</div>
+
+    <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="login-username">Usuario</label>
+        <input
+          type="text"
+          id="login-username"
+          class="form-input"
+          placeholder="Ingresa tu usuario"
+          autocomplete="username"
+          required
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-password">Contraseña</label>
+        <div style="position:relative">
+          <input
+            type="password"
+            id="login-password"
+            class="form-input"
+            placeholder="Ingresa tu contraseña"
+            autocomplete="current-password"
+            required
+            style="padding-right:48px">
+          <button type="button"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-light);font-size:1.1rem;padding:4px"
+            onclick="togglePasswordVisibility()">
+            👁️
+          </button>
+        </div>
+      </div>
+
+      <div id="login-error" style="display:none;margin-bottom:16px"></div>
+
+      <button type="submit" id="login-btn" class="btn btn-primary btn-full btn-lg">
+        <span>🔐</span> Ingresar al Sistema
+      </button>
+    </form>
+
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);text-align:center">
+      <p style="font-size:.75rem;color:var(--text-light);line-height:1.5">
+        El sistema determinará tu rol automáticamente según tus credenciales.<br>
+        Contacta al administrador si tienes problemas para acceder.
+      </p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PÁGINA 2: PANEL ADMINISTRADOR
+     ============================================================ -->
+<div id="page-admin" class="page">
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-logo-wrap" id="admin-header-logo-wrap">
+        <img class="header-logo-img" id="admin-header-logo" src="" alt="Logo" style="display:none;width:100%;height:100%;object-fit:contain">
+        <span class="header-logo-placeholder" id="admin-header-placeholder">🏫</span>
+      </div>
+      <div class="header-text">
+        <div class="header-institution">Cargando...</div>
+        <div class="header-election-name"></div>
+      </div>
+      <div class="header-status-area"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
+        <span style="font-size:.8rem;color:rgba(255,255,255,0.7)">Panel Admin</span>
+        <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="handleLogout()">
+          🚪 Salir
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Layout -->
+  <div class="panel-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar" role="navigation" aria-label="Menú administrador">
+      <div class="sidebar-section-title">General</div>
+      <button class="sidebar-link active" data-section="dashboard" onclick="navigateAdminSection('dashboard')">
+        <span class="sidebar-icon">📊</span> Dashboard
+      </button>
+      <button class="sidebar-link" data-section="elections" onclick="navigateAdminSection('elections')">
+        <span class="sidebar-icon">🗳️</span> Votaciones
+      </button>
+
+      <div class="sidebar-section-title">Padrón</div>
+      <button class="sidebar-link" data-section="voters" onclick="navigateAdminSection('voters')">
+        <span class="sidebar-icon">👥</span> Votantes
+      </button>
+      <button class="sidebar-link" data-section="sections" onclick="navigateAdminSection('sections')">
+        <span class="sidebar-icon">🏫</span> Secciones
+      </button>
+
+      <div class="sidebar-section-title">Candidatos</div>
+      <button class="sidebar-link" data-section="candidates" onclick="navigateAdminSection('candidates')">
+        <span class="sidebar-icon">👤</span> Candidatos
+      </button>
+
+      <div class="sidebar-section-title">Infraestructura</div>
+      <button class="sidebar-link" data-section="locations" onclick="navigateAdminSection('locations')">
+        <span class="sidebar-icon">📍</span> Ubicaciones
+      </button>
+      <button class="sidebar-link" data-section="urnas" onclick="navigateAdminSection('urnas')">
+        <span class="sidebar-icon">🏛️</span> Urnas
+      </button>
+      <button class="sidebar-link" data-section="users" onclick="navigateAdminSection('users')">
+        <span class="sidebar-icon">👤</span> Usuarios
+      </button>
+
+      <div class="sidebar-section-title">Sistema</div>
+      <button class="sidebar-link" data-section="audit" onclick="navigateAdminSection('audit')">
+        <span class="sidebar-icon">📋</span> Auditoría
+      </button>
+      <button class="sidebar-link" data-section="settings" onclick="navigateAdminSection('settings')">
+        <span class="sidebar-icon">⚙️</span> Configuración
+      </button>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="panel-main" role="main">
+      <div id="admin-section-dashboard"  class="panel-section active"></div>
+      <div id="admin-section-elections"  class="panel-section"></div>
+      <div id="admin-section-voters"     class="panel-section"></div>
+      <div id="admin-section-sections"   class="panel-section"></div>
+      <div id="admin-section-candidates" class="panel-section"></div>
+      <div id="admin-section-locations"  class="panel-section"></div>
+      <div id="admin-section-urnas"      class="panel-section"></div>
+      <div id="admin-section-users"      class="panel-section"></div>
+      <div id="admin-section-audit"      class="panel-section"></div>
+      <div id="admin-section-settings"   class="panel-section"></div>
+    </main>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PÁGINA 3: PANEL RESULTADOS
+     ============================================================ -->
+<div id="page-results" class="page">
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-logo-wrap" id="results-header-logo-wrap">
+        <img class="header-logo-img" id="results-header-logo" src="" alt="Logo" style="display:none;width:100%;height:100%;object-fit:contain">
+        <span class="header-logo-placeholder" id="results-header-placeholder">🏫</span>
+      </div>
+      <div class="header-text">
+        <div class="header-institution">Cargando...</div>
+        <div class="header-election-name"></div>
+      </div>
+      <div class="header-status-area"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
+        <span style="font-size:.8rem;color:rgba(255,255,255,0.7)">Panel Resultados</span>
+        <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="handleLogout()">
+          🚪 Salir
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido -->
+  <div id="results-main-content" style="background:var(--bg-soft);min-height:calc(100vh - 114px);padding:32px">
+    <div style="text-align:center;padding:48px">
+      <div class="spinner spinner-dark" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div>
+      <p style="margin-top:16px;color:var(--text-secondary)">Cargando...</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PÁGINA 4: PANEL URNA
+     ============================================================ -->
+<div id="page-urna" class="page">
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-logo-wrap" id="urna-header-logo-wrap">
+        <img class="header-logo-img" id="urna-header-logo" src="" alt="Logo" style="display:none;width:100%;height:100%;object-fit:contain">
+        <span class="header-logo-placeholder" id="urna-header-placeholder">🏫</span>
+      </div>
+      <div class="header-text">
+        <div class="header-institution">Cargando...</div>
+        <div class="header-election-name"></div>
+      </div>
+      <div class="header-status-area"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
+        <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="handleLogout()">
+          🚪 Salir
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Urna Info Bar -->
+  <div id="urna-info-bar" style="background:#EEF4FF;border-bottom:1px solid var(--border);padding:10px 24px">
+    <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:12px;font-size:.83rem;color:var(--primary-dark)">
+      <span>🗳️ <strong id="urna-info-name"></strong></span>
+      <span style="color:var(--border)">|</span>
+      <span>📍 <span id="urna-info-location"></span></span>
+      <span style="color:var(--border)">|</span>
+      <span>🏢 <span id="urna-info-sector"></span></span>
+    </div>
+  </div>
+
+  <!-- Contenido de la urna -->
+  <div id="urna-main-content" style="background:var(--bg-soft);min-height:calc(100vh - 160px)">
+    <div style="text-align:center;padding:80px 24px">
+      <div class="spinner spinner-dark" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div>
+      <p style="margin-top:20px;color:var(--text-secondary)">Iniciando urna...</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<!-- v=1772155485 — actualiza esta línea si los cambios no se reflejan -->
+<script src="js/config.js?v=1772155485"></script>
+<script src="js/auth.js?v=1772155485"></script>
+<script src="js/admin.js?v=1772155485"></script>
+<script src="js/urna.js?v=1772155485"></script>
+<script src="js/results.js?v=1772155485"></script>
+<script>
+// ===== INICIALIZACIÓN =====
+document.addEventListener('DOMContentLoaded', async () => {
+  // Registrar listener de formulario de login
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+  // Intentar restaurar sesión guardada primero
+  const restored = await tryRestoreSession();
+
+  // Si no hay sesión, cargar config pública para mostrar nombre/logo en login
+  if (!restored) {
+    await loadPublicConfig();
+  }
+});
+
+async function loadPublicConfig() {
+  try {
+    showLoading('Cargando sistema...');
+    const res = await API.getConfig();
+    if (res.ok) {
+      const cfg = res.data;
+      AppState.config = {
+        institutionName:   cfg.INSTITUTION_NAME   || 'Institución Educativa',
+        electionName:      cfg.ELECTION_NAME      || '',
+        logoUrl:           cfg.LOGO_URL           || '',
+        electionStatus:    cfg.ELECTION_STATUS    || 'inactive',
+        electionStartTime: cfg.ELECTION_START_TIME || '',
+        electionEndTime:   cfg.ELECTION_END_TIME   || '',
+      };
+      updateHeaderDisplay();
+    }
+  } catch (err) {
+    // No crítico - puede fallar si APPS_SCRIPT_URL no está configurada
+    console.info('Config no disponible aún. Configura APPS_SCRIPT_URL en js/config.js');
+    
+    // Mostrar aviso de configuración
+    const errDiv = document.getElementById('login-error');
+    if (errDiv && APP_CONFIG.APPS_SCRIPT_URL.includes('TU_ID_DE_SCRIPT')) {
+      errDiv.innerHTML = `
+        <div class="alert alert-warning" style="display:flex">
+          ⚠️ <strong style="margin-left:6px">Sistema no configurado:</strong> Edita <code>js/config.js</code> y establece tu APPS_SCRIPT_URL
+        </div>`;
+      errDiv.style.display = 'block';
+    }
+  } finally {
+    hideLoading();
+  }
+}
+
+// Toggle contraseña visible
+function togglePasswordVisibility() {
+  const inp = document.getElementById('login-password');
+  if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// Override renderUrnaPanel para actualizar info bar
+const _origLoadUrnaPanel = loadUrnaPanel;
+window.loadUrnaPanel = async function() {
+  await _origLoadUrnaPanel();
+  // Actualizar info bar
+  const urna = AppState.currentUrna;
+  if (urna) {
+    const nameEl = document.getElementById('urna-info-name');
+    const locEl  = document.getElementById('urna-info-location');
+    const secEl  = document.getElementById('urna-info-sector');
+    if (nameEl) nameEl.textContent = urna.nombre || '';
+    if (locEl)  locEl.textContent  = urna.ubicacion || '';
+    if (secEl)  secEl.textContent  = urna.sector || '';
+  }
+};
+
+// Pulse animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse {
+    0%,100% { opacity:1; }
+    50% { opacity:0.4; }
+  }
+`;
+document.head.appendChild(style);
+</script>
+
+</body>
+</html>
