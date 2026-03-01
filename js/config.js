@@ -3,7 +3,7 @@
  */
 
 var APP_CONFIG = {
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwVU1SYowvbF5HEq1NkVs4sBdY9irDYk6a1eGvV_IuOMW7yygMcvhhpWp2AHVCXHGxFfA/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwCs0FrfFSLOC4Wp3LbueJG8cfi73xApcnUC3eto8kWmm0XbdWG3ZXQQ6CuXgqfWzq1cw/exec',
   API_SECRET: 'VOTACION_MSSV_2026',
   RESULTS_REFRESH_INTERVAL: 5000,
   VOTE_SUCCESS_REDIRECT: 5,
@@ -58,6 +58,7 @@ var API = {
   getElections:            function()               { return API.call('getElections');                               },
   saveElection:            function(d)              { return API.call('saveElection',      d);                       },
   setElectionStatus:       function(d)              { return API.call('setElectionStatus', d);                       },
+  autoActivateElection:    function(id)             { return API.call('autoActivateElection', {id:id});                },
   getElectionDetail:       function(id)             { return API.call('getElectionDetail', {id:id});                 },
   toggleResultsVisibility: function(id,clave,m)     { return API.call('toggleResultsVisibility',{id:id,claveControl:clave,mostrar:m}); },
   getPositions:            function(eleccionId)     { return API.call('getPositions',      {electionId:eleccionId}); },
