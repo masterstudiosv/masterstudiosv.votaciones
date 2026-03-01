@@ -471,7 +471,12 @@ function renderVotersMgmt() {
     <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:16px">Registra a los alumnos, trabajadores o civiles habilitados para votar. Cada uno se asigna a una sección.</p>
     <div class="card" style="margin-bottom:20px;padding:16px 20px">
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <div style="font-weight:600;font-size:.88rem;color:var(--primary-dark)">🗳️ Votación del padrón:</div>
+        <div>
+          <div style="font-weight:600;font-size:.88rem;color:var(--primary-dark)">🗳️ Votación del padrón:</div>
+          <div style="font-size:.75rem;color:var(--text-secondary);margin-top:3px;max-width:380px;line-height:1.4">
+            Elige la votación donde se registrará la auditoría y en la que participará el votante si no tiene sección asignada
+          </div>
+        </div>
         <select id="voters-election-select" class="form-input form-select" style="max-width:300px" onchange="AppState.votersElectionId=this.value">
           <option value="">— Selecciona una votación —</option>${elecOpts}
         </select>
