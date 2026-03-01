@@ -135,10 +135,20 @@ async function loadUrnaPanel() {
     }
 
     // Aplicar lógica de estados programados
+    const estadoOriginal = activeElection ? activeElection.estado : null;
     if(activeElection) activeElection=resolveElectionState(activeElection);
 
+    // Si el estado resuelto es 'active' y el backend aún dice 'scheduled' → auto-activar en backend
+    if(activeElection && activeElection.estado==='active' && estadoOriginal==='scheduled'){
+      try { await API.autoActivateElection(activeElection.id); } catch(e){}
+    }
+    // Si el estado resuelto es 'ended' y el backend aún dice 'active' → auto-finalizar
+    if(activeElection && activeElection.estado==='ended' && estadoOriginal==='active'){
+      try { await API.autoActivateElection(activeElection.id); } catch(e){}
+    }
+
     if(activeElection && activeElection.estado==='active'){
-      // Solo cargar cargos y candidatos si la elección está activa
+      // Cargar cargos y candidatos de la elección activa
       const [posRes,candRes]=await Promise.all([
         API.getPositions(activeElection.id),
         API.getCandidates(activeElection.id)
@@ -240,13 +250,21 @@ function startUrnaWatchdog() {
         const elections=electionsRes.data;
         let election=elections.find(e=>e.id===AppState.currentElection.id);
         if(election){
+          const estadoBackend = election.estado;
           election=resolveElectionState(election);
           const estadoAnterior=AppState.currentElection.estado;
           if(election.estado !== estadoAnterior){
+            // Auto-sincronizar backend si el estado cambió por programación
+            if(estadoBackend==='scheduled' && election.estado==='active'){
+              try { await API.autoActivateElection(election.id); } catch(e){}
+            }
+            if(estadoBackend==='active' && election.estado==='ended'){
+              try { await API.autoActivateElection(election.id); } catch(e){}
+            }
             // Estado cambió — recargar panel de urna
             AppState.currentElection=election;
-            if(election.estado==='active' && AppState.positions.length===0){
-              // Cargar cargos y candidatos si ahora está activa
+            if(election.estado==='active'){
+              // SIEMPRE recargar cargos y candidatos al activarse
               const [posRes,candRes]=await Promise.all([
                 API.getPositions(election.id),
                 API.getCandidates(election.id)
